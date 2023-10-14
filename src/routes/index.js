@@ -235,9 +235,9 @@ router.get("/users", (req, res) => {
 });
 
 // GET data movies
-router.get("/movie", (req, res) => {
+router.get("/movies", (req, res) => {
   // Mengambil data pengguna dari basis data
-  pool.query("SELECT * FROM movie", (error, result) => {
+  pool.query("SELECT * FROM movies", (error, result) => {
     if (error) {
       return res
         .status(500)
