@@ -150,9 +150,42 @@ const express = require("express");
 const router = express.Router();
 const jwt = require("jsonwebtoken");
 const pool = require("../config/database");
+const {
+  authMiddleware,
+  adminMiddleware,
+} = require("../middleware/authMiddleware.js");
+// login users
+router.post("/login", (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ message: "Harap isi semua field." });
+  }
+
+  // Lakukan otentikasi (perhatikan: ini hanya contoh)
+  pool.query(
+    "SELECT * FROM users WHERE email = $1 AND password = $2",
+    [email, password],
+    (error, result) => {
+      if (error) {
+        return res.status(500).json({ message: "Gagal melakukan otentikasi." });
+      }
+      if (result.rows.length === 0) {
+        return res.status(401).json({
+          message: "Gagal melakukan otentikasi. Periksa email dan password.",
+        });
+      }
+
+      // Buat token JWT
+      const token = jwt.sign({ email }, process.env.JWT_SECRET);
+
+      // Kembalikan token sebagai respons
+      return res.status(200).json({ token });
+    }
+  );
+});
 
 // Registrasi User
-// Simpan data user ke database
 router.post("/register", (req, res) => {
   const { email, password, gender, role } = req.body;
 
@@ -190,39 +223,10 @@ router.post("/register", (req, res) => {
   );
 });
 
-// Otentikasi User
-router.post("/login", (req, res) => {
-  const { email, password } = req.body;
-
-  if (!email || !password) {
-    return res.status(400).json({ message: "Harap isi semua field." });
-  }
-
-  // Lakukan otentikasi (perhatikan: ini hanya contoh)
-  pool.query(
-    "SELECT * FROM users WHERE email = $1 AND password = $2",
-    [email, password],
-    (error, result) => {
-      if (error) {
-        return res.status(500).json({ message: "Gagal melakukan otentikasi." });
-      }
-      if (result.rows.length === 0) {
-        return res.status(401).json({
-          message: "Gagal melakukan otentikasi. Periksa email dan password.",
-        });
-      }
-
-      // Buat token JWT
-      const token = jwt.sign({ email }, process.env.JWT_SECRET);
-      return res.status(200).json({ token });
-    }
-  );
-});
-
 // Contoh endpoint lain (GET, PUT, DELETE)
 
 // GET data users
-router.get("/users", (req, res) => {
+router.get("/users", authMiddleware, (req, res) => {
   // Mengambil data pengguna dari basis data
   pool.query("SELECT * FROM users", (error, result) => {
     if (error) {
@@ -235,7 +239,7 @@ router.get("/users", (req, res) => {
 });
 
 // GET data movies
-router.get("/movies", (req, res) => {
+router.get("/movies", authMiddleware, (req, res) => {
   // Mengambil data pengguna dari basis data
   pool.query("SELECT * FROM movies", (error, result) => {
     if (error) {
@@ -249,7 +253,7 @@ router.get("/movies", (req, res) => {
 
 // PUT data users
 // PUT data users berdasarkan ID
-router.put("/users/:id", (req, res) => {
+router.put("/users/:id", authMiddleware, adminMiddleware, (req, res) => {
   const id = parseInt(req.params.id);
   const { email, password, gender, role } = req.body;
 
@@ -276,7 +280,7 @@ router.put("/users/:id", (req, res) => {
 
 // PUT data movies
 // PUT data movies berdasarkan ID
-router.put("/movies/:id", (req, res) => {
+router.put("/movies/:id", authMiddleware, adminMiddleware, (req, res) => {
   const id = parseInt(req.params.id);
   const { title, genres, year } = req.body;
 
@@ -303,7 +307,7 @@ router.put("/movies/:id", (req, res) => {
 
 // DELETE data users berdasarkan ID
 // DELETE data users berdasarkan ID
-router.delete("/users/:id", (req, res) => {
+router.delete("/users/:id", authMiddleware, adminMiddleware, (req, res) => {
   const id = parseInt(req.params.id);
 
   // Periksa apakah pengguna dengan ID yang diberikan ada dalam database
@@ -329,7 +333,7 @@ router.delete("/users/:id", (req, res) => {
 
 // DELETE data movies berdasarkan ID
 // DELETE data movies berdasarkan ID
-router.delete("/movies/:id", (req, res) => {
+router.delete("/movies/:id", authMiddleware, adminMiddleware, (req, res) => {
   const id = parseInt(req.params.id);
 
   // Periksa apakah film dengan ID yang diberikan ada dalam database

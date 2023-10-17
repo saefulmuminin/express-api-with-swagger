@@ -1,21 +1,34 @@
 const express = require("express");
 const app = express();
-const morgan = require("morgan"); // Tambahkan modul morgan
+const morgan = require("morgan");
 const bodyParser = require("body-parser");
-const cors = require("cors"); // Tambahkan ini jika Anda ingin mengaktifkan CORS
+const cors = require("cors");
 const port = process.env.PORT || 3000;
 require("dotenv").config();
 
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
-app.use(morgan("combined")); // Aktifkan morgan untuk logging
+app.use(morgan("combined"));
 
-// Impor rute-rute yang telah Anda buat
-const authRoutes = require("./src/routes/index.js"); // Sesuaikan dengan lokasi rute Anda
+// Import middleware autentikasi
+const authMiddleware = require("./src/middleware/authMiddleware.js"); // Sesuaikan dengan lokasi middleware autentikasi Anda
 
-// Gunakan rute-rute tersebut
-app.use("/", authRoutes);
+// Import rute-rute yang telah Anda buat
+const authRoutes = require("./src/routes/index.js");
+
+// Gunakan middleware autentikasi (sebelum rute yang memerlukan otentikasi)
+app.use("/auth", authMiddleware.authMiddleware);
+
+// Gunakan rute-rute yang memerlukan otentikasi
+app.use("/auth", authRoutes);
+
+// Contoh penggunaan adminMiddleware
+// Gunakan middleware admin (sebelum rute yang memerlukan hak akses admin)
+app.use("/admin", authMiddleware.adminMiddleware);
+
+// Gunakan rute-rute yang memerlukan hak akses admin
+app.use("/admin", authRoutes);
 
 const swaggerJSDoc = require("swagger-jsdoc");
 const swaggerUI = require("swagger-ui-express");
